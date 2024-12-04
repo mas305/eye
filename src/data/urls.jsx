@@ -1,5 +1,5 @@
 // Replace '{{host}}' with the actual host URL.
-const BACKEND_URL = "https://backend-production-eyedentify.up.railway.app";
+const BACKEND_URL = "https://eyedentifyai-backend-production.up.railway.app";
 
 // Update the URLs accordingly
 export const PARKING_OCCUPANCY_REPORT = `${BACKEND_URL}/dashboard/parking-occupancy-report/`;

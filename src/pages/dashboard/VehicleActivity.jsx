@@ -149,6 +149,7 @@ export function VehicleActivity() {
 
   const handleCloseModal = () => setOpenModal(false);
   console.log(postData);
+  const [key, setKey] = useState(0);
 
   return (
     <Card className="p-6 max-w-lg mx-auto">
@@ -170,8 +171,13 @@ export function VehicleActivity() {
             Parking Lot
           </Typography>
           <Select
+            key={key} // This will force the component to re-render
             value={selectedParkingLot}
-            onChange={(e) => setSelectedParkingLot(e)}
+            onChange={(e) => {
+              const value = e;
+              setSelectedParkingLot(value);
+              setKey((prev) => prev + 1); // Trigger re-render by updating key
+            }}
             label="Select Parking Lot"
             required
           >
