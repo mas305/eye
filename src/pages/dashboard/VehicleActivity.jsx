@@ -25,11 +25,13 @@ export function VehicleActivity() {
   const [dateRange, setDateRange] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("");
   const [licensePlate, setLicensePlate] = useState(""); // New state for License Plate
-  const [numberOfVisits, setNumberOfVisits] = useState(""); // New state for Number of Visits
-  const [visitDuration, setVisitDuration] = useState(""); // New state for Visit Duration
   const [postData, setPostData] = useState(null); // State for post data
   const [openModal, setOpenModal] = useState(false); // State to handle modal visibility
   const [errorMessage, setErrorMessage] = useState(""); // New state for error message
+  const [minVisits, setMinVisits] = useState(""); // New state for minimum number of visits
+  const [maxVisits, setMaxVisits] = useState(""); // New state for maximum number of visits
+  const [minVisitDuration, setMinVisitDuration] = useState(""); // New state for minimum visit duration
+  const [maxVisitDuration, setMaxVisitDuration] = useState(""); // New state for maximum visit duration
 
   // Fetch parking lots data
   useEffect(() => {
@@ -100,19 +102,25 @@ export function VehicleActivity() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    // Simple validation to check if all required fields are filled
+    // Validation based on conditions:
+    // 1. Either the license plate should be provided OR
+    // 2. The number of visits and duration should be provided
     if (
-      !selectedParkingLot ||
-      !dateRange ||
-      !timeOfDay ||
-      !licensePlate ||
-      !numberOfVisits ||
-      !visitDuration
+      (!licensePlate &&
+        (!minVisits || !maxVisits || !minVisitDuration || !maxVisitDuration)) ||
+      (!minVisits &&
+        !maxVisits &&
+        !minVisitDuration &&
+        !maxVisitDuration &&
+        !licensePlate)
     ) {
-      setErrorMessage("Please fill in all required fields.");
+      setErrorMessage(
+        "Please fill in either the License Plate or the number of Visits and Duration."
+      );
       return;
     }
 
+    // Prepare the date and time range for the request
     const { startDate, endDate } = getDateRange(dateRange);
     const { startTime, endTime } = getTimeRange(timeOfDay);
 
@@ -122,9 +130,11 @@ export function VehicleActivity() {
       end_date: endDate ? endDate.toISOString().split("T")[0] : null,
       start_time: startTime,
       end_time: endTime,
-      license_plate: licensePlate,
-      number_of_visits: numberOfVisits,
-      visit_duration: visitDuration,
+      license_plate: licensePlate || null, // If no license plate, set it as null
+      min_visits: minVisits || null, // If no visits, set it as null
+      max_visits: maxVisits || null, // If no max visits, set it as null
+      min_visit_duration: minVisitDuration || null, // If no duration, set it as null
+      max_visit_duration: maxVisitDuration || null, // If no max duration, set it as null
     };
 
     try {
@@ -149,7 +159,6 @@ export function VehicleActivity() {
 
   const handleCloseModal = () => setOpenModal(false);
   console.log(postData);
-  const [key, setKey] = useState(0);
 
   return (
     <Card className="p-6 max-w-lg mx-auto">
@@ -171,13 +180,8 @@ export function VehicleActivity() {
             Parking Lot
           </Typography>
           <Select
-            key={key} // This will force the component to re-render
             value={selectedParkingLot}
-            onChange={(e) => {
-              const value = e;
-              setSelectedParkingLot(value);
-              setKey((prev) => prev + 1); // Trigger re-render by updating key
-            }}
+            onChange={(e) => setSelectedParkingLot(e)}
             label="Select Parking Lot"
             required
           >
@@ -233,108 +237,135 @@ export function VehicleActivity() {
             value={licensePlate}
             onChange={(e) => setLicensePlate(e.target.value)}
             label="Enter License Plate"
-            required
           />
         </div>
 
-        {/* Number of Visits Text Box */}
+        {/* Number of Visits */}
         <div>
           <Typography variant="small" color="gray" className="mb-1">
             Number of Visits
           </Typography>
-          <Input
-            value={numberOfVisits}
-            onChange={(e) => setNumberOfVisits(e.target.value)}
-            label="Enter Number of Visits"
-            type="number"
-            required
-            min="1"
-          />
+          <div className="flex space-x-4">
+            <Input
+              type="number"
+              value={minVisits}
+              onChange={(e) => setMinVisits(e.target.value)}
+              label="Min Visits"
+            />
+            <Input
+              type="number"
+              value={maxVisits}
+              onChange={(e) => setMaxVisits(e.target.value)}
+              label="Max Visits"
+            />
+          </div>
         </div>
 
-        {/* Visit Duration Text Box */}
+        {/* Visit Duration */}
         <div>
           <Typography variant="small" color="gray" className="mb-1">
             Visit Duration (Minutes)
           </Typography>
-          <Input
-            value={visitDuration}
-            onChange={(e) => setVisitDuration(e.target.value)}
-            label="Enter Visit Duration in Minutes"
-            type="number"
-            required
-            min="1"
-          />
+          <div className="flex space-x-4">
+            <Input
+              type="number"
+              value={minVisitDuration}
+              onChange={(e) => setMinVisitDuration(e.target.value)}
+              label="Min Duration"
+            />
+            <Input
+              type="number"
+              value={maxVisitDuration}
+              onChange={(e) => setMaxVisitDuration(e.target.value)}
+              label="Max Duration"
+            />
+          </div>
         </div>
 
-        <Button type="submit" color="black" fullWidth>
+        {/* Submit Button */}
+        <Button type="submit" color="blue" className="w-full">
           Submit
         </Button>
       </form>
 
-      {/* Modal to display vehicle activity report data */}
+      {/* Modal to display filtered results */}
       <Dialog open={openModal} handler={handleCloseModal}>
-        <DialogHeader>Vehicle Activity Report</DialogHeader>
+        <DialogHeader>Filtered Vehicle Activity</DialogHeader>
         <DialogBody>
-          <div>
-            <Typography variant="h6">Report Data:</Typography>
-
-            {postData && Array.isArray(postData) && postData.length > 0 ? (
-              postData.map((record, index) => (
-                <div key={index} className="mb-6">
-                  {/* Plate Number as Text */}
-                  <Typography variant="body1">
-                    <strong>Plate Number:</strong> {record.plate_number}
-                  </Typography>
-
-                  {/* Car Image */}
-                  <div className="mt-2">
-                    <Typography variant="body1">
-                      <strong>Car Image:</strong>
-                    </Typography>
-                    <img
-                      src={record.car_image}
-                      alt={`Car ${index + 1}`}
-                      className="w-full h-auto rounded-lg shadow-lg"
-                    />
-                  </div>
-
-                  {/* Plate Image */}
-                  <div className="mt-2">
-                    <Typography variant="body1">
-                      <strong>Plate Image:</strong>
-                    </Typography>
-                    <img
-                      src={record.plate_image}
-                      alt={`Plate ${index + 1}`}
-                      className="w-full h-auto rounded-lg shadow-lg"
-                    />
-                  </div>
-
-                  {/* Parking Lot Name */}
-                  <Typography variant="body1" className="mt-4">
-                    <strong>Parking Lot Name:</strong> {record.parking_lot_name}
-                  </Typography>
-
-                  {/* Number of Visits */}
-                  <Typography variant="body1" className="mt-2">
-                    <strong>Number of Visits:</strong> {record.number_of_visits}
-                  </Typography>
-
-                  {/* Average Visit Duration */}
-                  <Typography variant="body1" className="mt-2">
-                    <strong>Average Visit Duration:</strong>{" "}
-                    {record.average_visit_duration} mins
-                  </Typography>
-                </div>
-              ))
-            ) : (
-              <Typography>No data available.</Typography>
-            )}
-          </div>
+          {postData && postData.length > 0 ? (
+            <div className="overflow-auto max-h-96">
+              <table className="min-w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {/* Column headers */}
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Parking Lot Name
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Plate Number
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Number of Visits
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Average Visit Duration (mins)
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Car Image
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Plate Image
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {postData.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.parking_lot_name || "N/A"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.plate_number || "N/A"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.number_of_visits || "N/A"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.average_visit_duration || "N/A"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.car_image ? (
+                          <img
+                            src={item.car_image}
+                            alt="Car"
+                            className="w-20 h-20 object-cover"
+                          />
+                        ) : (
+                          "No Image"
+                        )}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.plate_image ? (
+                          <img
+                            src={item.plate_image}
+                            alt="Plate"
+                            className="w-20 h-20 object-cover"
+                          />
+                        ) : (
+                          "No Image"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No data available</p>
+          )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="outlined" color="red" onClick={handleCloseModal}>
+          <Button variant="text" color="red" onClick={handleCloseModal}>
             Close
           </Button>
         </DialogFooter>
@@ -342,4 +373,3 @@ export function VehicleActivity() {
     </Card>
   );
 }
-export default VehicleActivity;

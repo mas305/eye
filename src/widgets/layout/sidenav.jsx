@@ -18,7 +18,7 @@ export function Sidenav({ brandImg, brandName, routes }) {
     transparent: "bg-transparent",
   };
 
-  // console.log(routes);
+  console.log(routes);
 
   return (
     <aside
